@@ -237,6 +237,9 @@
     background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
     border-radius: 999px; padding: 1px 9px; font-size: .72rem; font-weight: 700;
   }
+  .event.done .ev-title { text-decoration: line-through; color: var(--muted); }
+  .event.done .countdown { opacity: .45; }
+  .event.done .ev-date { opacity: .7; }
 
   /* ---------- Google Calendar connect ---------- */
   .gcal-btn {
@@ -547,6 +550,36 @@ const QUOTES = [
   ["It is upon the rock of our Redeemer that ye must build your foundation.", "Helaman 5:12"],
   ["Whoso shall put their trust in God shall be supported in their trials.", "Alma 36:3"],
   ["Ye are free to act for yourselves.", "2 Nephi 10:23"],
+  ["O remember, remember, my son, how strict are the commandments of God.", "Alma 37:13"],
+  ["Pray unto the Father with all the energy of heart, that ye may be filled with his love.", "Moroni 7:48"],
+  ["He denieth none that come unto him; all are alike unto God.", "2 Nephi 26:33"],
+  ["In the strength of the Lord I can do all things.", "Alma 26:12"],
+  ["Behold, I am Jesus Christ, whom the prophets testified shall come into the world.", "3 Nephi 11:10"],
+  ["The keeper of the gate is the Holy One of Israel.", "2 Nephi 9:41"],
+  ["Look unto God with firmness of mind, and pray unto him with exceeding faith.", "Jacob 3:1"],
+  ["Watch and pray always, lest ye be tempted.", "3 Nephi 18:15"],
+  ["Whatsoever ye shall ask the Father in my name, believing, it shall be given unto you.", "3 Nephi 18:20"],
+  ["Pray in your families unto the Father, always in my name.", "3 Nephi 18:21"],
+  ["See that ye have faith, hope, and charity, and then ye will always abound in good works.", "Alma 7:24"],
+  ["Believe in God; believe that he is, and that he created all things.", "Mosiah 4:9"],
+  ["Always retain in remembrance the greatness of God.", "Mosiah 4:11"],
+  ["See that all these things are done in wisdom and order.", "Mosiah 4:27"],
+  ["How knoweth a man the master whom he has not served?", "Mosiah 5:13"],
+  ["For behold, are we not all beggars?", "Mosiah 4:19"],
+  ["Consider on the blessed and happy state of those that keep the commandments of God.", "Mosiah 2:41"],
+  ["Awake, my soul! No longer droop in sin. Rejoice, O my heart.", "2 Nephi 4:28"],
+  ["Nevertheless, I know in whom I have trusted.", "2 Nephi 4:19"],
+  ["I have trusted in thee, and I will trust in thee forever.", "2 Nephi 4:34"],
+  ["By the power of the Holy Ghost ye may know the truth of all things.", "Moroni 10:5"],
+  ["If ye will have faith in me ye shall have power to do whatsoever thing is expedient.", "Moroni 7:33"],
+  ["Deny not the gifts of God, for they are many.", "Moroni 10:8"],
+  ["As much as ye shall put your trust in God ye shall be delivered out of your trials.", "Alma 38:5"],
+  ["Seek ye first the kingdom of God, and his righteousness.", "3 Nephi 13:33"],
+  ["Let your light so shine before this people, that they may see your good works.", "3 Nephi 12:16"],
+  ["For do we not read that God is the same yesterday, today, and forever?", "Mormon 9:9"],
+  ["Hope maketh an anchor to the souls of men, sure and steadfast.", "Ether 12:4"],
+  ["Ye receive no witness until after the trial of your faith.", "Ether 12:6"],
+  ["We will liken the word unto a seed.", "Alma 32:28"],
 ];
 function setQuote() {
   const now = new Date();
@@ -742,6 +775,10 @@ async function toggleStar(ev) {
   ev.starred = !ev.starred; renderEvents();
   await sb.from('events').update({ starred: ev.starred }).eq('id', ev.id);
 }
+async function toggleEventDone(ev) {
+  ev.done = !ev.done; renderEvents();
+  await sb.from('events').update({ done: ev.done }).eq('id', ev.id);
+}
 async function delEvent(ev) {
   state.events = state.events.filter(x => x.id !== ev.id); renderEvents();
   await sb.from('events').delete().eq('id', ev.id);
@@ -754,7 +791,7 @@ function countdownClass(days) {
   return 'c-green';
 }
 function renderEventRow(ev) {
-  const wrap = el('div', 'event');
+  const wrap = el('div', 'event' + (ev.done ? ' done' : ''));
   const days = ev.d;
   const cd = el('div', 'countdown ' + countdownClass(days));
   let num, lbl;
@@ -766,9 +803,12 @@ function renderEventRow(ev) {
   const main = el('div', 'ev-main');
   const srcMark = (ev.source === 'google' || ev.source === 'ics') ? '<span class="ev-src" title="From your Google Calendar">📅</span>' : '';
   main.append(el('div', 'ev-title', esc(ev.title) + srcMark), el('div', 'ev-date', prettyDate(ev.event_date)));
+  const chk = el('div', 'check' + (ev.done ? ' done' : ''), ev.done ? '✓' : '');
+  chk.title = ev.done ? 'Mark as not done' : 'Mark as done';
+  chk.onclick = () => toggleEventDone(ev);
   const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
   star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
-  wrap.append(cd, main, star);
+  wrap.append(cd, main, chk, star);
   if (ev.source !== 'ics') {
     const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
     wrap.append(del);
@@ -788,7 +828,7 @@ function renderEvents() {
     { label: 'Later',        test: d => d >= 31 },
   ];
   for (const sec of SECTIONS) {
-    const group = items.filter(ev => sec.test(ev.d)).sort((a, b) => (b.starred - a.starred) || (a.d - b.d));
+    const group = items.filter(ev => sec.test(ev.d)).sort((a, b) => (a.done - b.done) || (b.starred - a.starred) || (a.d - b.d));
     if (!group.length) continue;
     box.appendChild(el('div', 'ev-section', `${sec.label} <span class="ev-section-count">${group.length}</span>`));
     for (const ev of group) box.appendChild(renderEventRow(ev));
