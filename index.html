@@ -724,7 +724,7 @@ $('eventForm').addEventListener('submit', async (e) => {
   if (!title || !date) return;
   $('eventTitle').value = ''; $('eventDate').value = '';
   const { data } = await sb.from('events').insert({ title, event_date: date }).select().single();
-  if (data) { state.events.push(data); renderEvents(); if (gcal.connected) triggerSync(); }
+  if (data) { state.events.push(data); renderEvents(); }
 });
 async function toggleStar(ev) {
   ev.starred = !ev.starred; renderEvents();
@@ -732,13 +732,7 @@ async function toggleStar(ev) {
 }
 async function delEvent(ev) {
   state.events = state.events.filter(x => x.id !== ev.id); renderEvents();
-  if (gcal.connected && ev.gcal_event_id) {
-    // soft-delete so the background sync can remove it from Google Calendar too
-    await sb.from('events').update({ deleted: true }).eq('id', ev.id);
-    triggerSync();
-  } else {
-    await sb.from('events').delete().eq('id', ev.id);
-  }
+  await sb.from('events').delete().eq('id', ev.id);
 }
 function countdownClass(days) {
   if (days < 0) return 'c-gray';
@@ -765,18 +759,22 @@ function renderEvents() {
     else { num = String(days); lbl = 'days'; }
     cd.innerHTML = `<div class="num">${num}</div><div class="lbl">${lbl}</div>`;
     const main = el('div', 'ev-main');
-    const srcMark = ev.source === 'google' ? '<span class="ev-src" title="From Google Calendar">📅</span>' : '';
+    const srcMark = (ev.source === 'google' || ev.source === 'ics') ? '<span class="ev-src" title="From your Google Calendar">📅</span>' : '';
     main.append(el('div', 'ev-title', esc(ev.title) + srcMark), el('div', 'ev-date', prettyDate(ev.event_date)));
     const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
     star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
-    const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
-    wrap.append(cd, main, star, del); box.appendChild(wrap);
+    wrap.append(cd, main, star);
+    if (ev.source !== 'ics') {
+      const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
+      wrap.append(del);
+    }
+    box.appendChild(wrap);
   }
 }
 
-/* ---------- GOOGLE CALENDAR SYNC ---------- */
+/* ---------- CALENDAR LINK (iCal / ICS) SYNC ---------- */
 const FUNCTIONS_BASE = SUPABASE_URL + '/functions/v1';
-let gcal = { connected: false, email: null, error: null };
+let gcal = { connected: false, error: null, last: null };
 let _realtimeReady = false;
 
 async function authHeader() {
@@ -785,52 +783,65 @@ async function authHeader() {
 }
 async function loadGcalStatus() {
   try {
-    const { data } = await sb.rpc('my_google_connection');
+    const { data } = await sb.rpc('my_calendar_feed');
     const row = Array.isArray(data) ? data[0] : data;
     gcal.connected = !!(row && row.connected);
-    gcal.email = (row && row.google_email) || null;
     gcal.error = (row && row.last_error) || null;
+    gcal.last = (row && row.last_synced_at) || null;
   } catch { gcal.connected = false; }
   renderGcalStatus();
 }
 function renderGcalStatus() {
   const box = $('gcalStatus'); if (!box) return;
   if (gcal.connected) {
-    box.innerHTML = `<span class="gcal-pill">📅 Synced with Google Calendar${gcal.email ? ` · ${esc(gcal.email)}` : ''}<span class="disc" id="gcalDisc" title="Disconnect">✕</span></span>`
-      + (gcal.error ? `<div class="gcal-err">⚠️ Last sync issue — try reconnecting.</div>` : '');
-    const d = $('gcalDisc'); if (d) d.onclick = disconnectGoogle;
+    const when = gcal.last ? ` · updated ${new Date(gcal.last).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : '';
+    box.innerHTML = `<span class="gcal-pill">📅 Calendar linked${when}<span class="disc" id="gcalDisc" title="Remove calendar link">✕</span></span>`
+      + (gcal.error ? `<div class="gcal-err">⚠️ Couldn't read that link — make sure it's the “Secret address in iCal format” (ends in .ics).</div>` : '');
+    const d = $('gcalDisc'); if (d) d.onclick = disconnectFeed;
   } else {
-    box.innerHTML = `<button class="gcal-btn" id="gcalConnectBtn">📅 Connect Google Calendar</button>`;
-    const b = $('gcalConnectBtn'); if (b) b.onclick = connectGoogle;
+    box.innerHTML = `<button class="gcal-btn" id="gcalConnectBtn">📅 Add Google Calendar link</button>`;
+    const b = $('gcalConnectBtn'); if (b) b.onclick = showFeedInput;
   }
 }
-async function connectGoogle() {
-  const btn = $('gcalConnectBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Opening Google…'; }
-  try {
-    const res = await fetch(`${FUNCTIONS_BASE}/google-auth-start`, {
-      method: 'POST',
-      headers: { ...(await authHeader()), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ return_url: location.origin + location.pathname })
-    });
-    const j = await res.json();
-    if (j.url) location.href = j.url;
-    else { alert(j.error || 'Could not start Google connection.'); renderGcalStatus(); }
-  } catch { alert('Could not reach the sync service.'); renderGcalStatus(); }
+function showFeedInput() {
+  const box = $('gcalStatus');
+  box.innerHTML = `
+    <div class="row" style="flex-wrap:wrap; gap:8px;">
+      <input type="text" id="icsUrl" placeholder="Paste your calendar's secret iCal URL (ends in .ics)" style="flex:1 1 240px;" />
+      <button class="btn" id="icsSave">Save</button>
+      <button class="btn ghost" id="icsCancel">Cancel</button>
+    </div>
+    <div id="icsHint" style="color:var(--muted); font-size:.8rem; margin-top:6px;">
+      In Google Calendar → Settings → (your calendar) → “Secret address in iCal format”. Paste that link here.
+    </div>`;
+  $('icsCancel').onclick = renderGcalStatus;
+  $('icsSave').onclick = saveFeed;
+  $('icsUrl').focus();
 }
-async function disconnectGoogle() {
-  if (!confirm('Disconnect Google Calendar? Your existing events stay, but new changes will no longer sync.')) return;
-  try { await sb.rpc('disconnect_my_google'); } catch {}
-  gcal.connected = false; gcal.email = null; gcal.error = null; renderGcalStatus();
+async function saveFeed() {
+  const url = $('icsUrl').value.trim();
+  if (!/^https?:\/\/.+/i.test(url)) { alert('Please paste a valid calendar link (it should start with https://).'); return; }
+  const btn = $('icsSave'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try { await sb.rpc('set_calendar_feed', { p_url: url }); }
+  catch { alert('Could not save the link.'); renderGcalStatus(); return; }
+  gcal.connected = true; renderGcalStatus();
+  triggerSync();
+}
+async function disconnectFeed() {
+  if (!confirm('Remove the calendar link? Imported events will be cleared.')) return;
+  try { await sb.rpc('disconnect_calendar_feed'); } catch {}
+  gcal.connected = false; gcal.error = null; renderGcalStatus(); reloadEvents();
 }
 let _syncing = false;
 async function triggerSync() {
   if (_syncing) return; _syncing = true;
   try {
-    await fetch(`${FUNCTIONS_BASE}/calendar-sync`, {
+    await fetch(`${FUNCTIONS_BASE}/ics-sync`, {
       method: 'POST', headers: { ...(await authHeader()), 'Content-Type': 'application/json' }, body: '{}'
     });
   } catch {}
   _syncing = false;
+  await loadGcalStatus();
   reloadEvents();
 }
 function setupRealtime() {
@@ -840,13 +851,6 @@ function setupRealtime() {
         () => reloadEvents())
     .subscribe();
 }
-// Coming back from a successful Google connection
-(function handleGcalReturn() {
-  if (new URLSearchParams(location.search).get('gcal') === 'connected') {
-    history.replaceState(null, '', location.pathname);
-    setTimeout(() => { loadGcalStatus(); triggerSync(); }, 600);
-  }
-})();
 
 /* ---------- HABITS ---------- */
 $('habitForm').addEventListener('submit', async (e) => {
