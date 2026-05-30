@@ -99,7 +99,8 @@
     position: relative; overflow: hidden;
   }
   .quote .q-text { font-size: 1.15rem; font-weight: 600; line-height: 1.4; }
-  .quote .q-author { margin-top: 6px; opacity: .9; font-size: .9rem; }
+  .quote .q-author { margin-top: 6px; opacity: .9; font-size: .9rem; font-style: italic; }
+  .quote .q-eyebrow { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; opacity: .85; margin-bottom: 8px; }
   .quote .q-mark { position: absolute; right: 14px; top: -10px; font-size: 5rem; opacity: .18; font-family: Georgia, serif; }
 
   /* ---------- Grid ---------- */
@@ -226,6 +227,16 @@
     color: var(--line); padding: 2px; line-height: 1;
   }
   .star.on { color: var(--yellow); }
+  .ev-section {
+    font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 18px 0 4px; display: flex; align-items: center; gap: 8px;
+  }
+  .ev-section:first-child { margin-top: 6px; }
+  .ev-section::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .ev-section-count {
+    background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
+    border-radius: 999px; padding: 1px 9px; font-size: .72rem; font-weight: 700;
+  }
 
   /* ---------- Google Calendar connect ---------- */
   .gcal-btn {
@@ -361,18 +372,21 @@
   <!-- Quote -->
   <div class="quote">
     <span class="q-mark">&ldquo;</span>
+    <div class="q-eyebrow">📖 Book of Mormon · Scripture of the Day</div>
     <div class="q-text" id="quoteText">—</div>
     <div class="q-author" id="quoteAuthor"></div>
   </div>
 
-  <!-- Today's tasks (prominent, full width) -->
+  <!-- Upcoming events (prominent, full width, grouped into day sections) -->
   <div class="card" style="margin-bottom:18px;">
-    <h2><span class="section-emoji">✅</span> Today's Tasks <span class="badge" id="todoBadge">0/0</span></h2>
-    <form class="row" id="todoForm">
-      <input type="text" id="todoInput" placeholder="Add a task and hit Enter…" />
+    <h2><span class="section-emoji">📅</span> Upcoming Events</h2>
+    <form class="row" id="eventForm" style="flex-wrap:wrap;">
+      <input type="text" id="eventTitle" placeholder="Event name…" style="flex:2 1 200px;" />
+      <input type="date" id="eventDate" style="flex:1 1 160px;" />
       <button class="btn" type="submit">Add</button>
     </form>
-    <ul class="list" id="todoList" style="margin-top:12px;"></ul>
+    <div id="gcalStatus" style="margin-top:10px;"></div>
+    <div id="eventList" style="margin-top:10px;"></div>
   </div>
 
   <!-- Grid -->
@@ -393,16 +407,14 @@
       <div class="mood-row" id="energyRow"></div>
     </div>
 
-    <!-- Upcoming events -->
+    <!-- To-dos -->
     <div class="card col-6">
-      <h2><span class="section-emoji">📅</span> Upcoming Events</h2>
-      <form class="row" id="eventForm" style="flex-wrap:wrap;">
-        <input type="text" id="eventTitle" placeholder="Event name…" style="flex:2 1 140px;" />
-        <input type="date" id="eventDate" style="flex:1 1 130px;" />
+      <h2><span class="section-emoji">✅</span> Today's Tasks <span class="badge" id="todoBadge">0/0</span></h2>
+      <form class="row" id="todoForm">
+        <input type="text" id="todoInput" placeholder="Add a task and hit Enter…" />
         <button class="btn" type="submit">Add</button>
       </form>
-      <div id="gcalStatus" style="margin-top:10px;"></div>
-      <div id="eventList" style="margin-top:10px;"></div>
+      <ul class="list" id="todoList" style="margin-top:12px;"></ul>
     </div>
 
     <!-- Habits -->
@@ -511,30 +523,30 @@ setInterval(tickClock, 1000); tickClock();
    Quote of the day (stable per day, local list)
    ============================================================ */
 const QUOTES = [
-  ["The secret of getting ahead is getting started.", "Mark Twain"],
-  ["It always seems impossible until it's done.", "Nelson Mandela"],
-  ["Don't watch the clock; do what it does. Keep going.", "Sam Levenson"],
-  ["Well done is better than well said.", "Benjamin Franklin"],
-  ["You don't have to be great to start, but you have to start to be great.", "Zig Ziglar"],
-  ["Little things make big days.", "Unknown"],
-  ["Action is the foundational key to all success.", "Pablo Picasso"],
-  ["The future depends on what you do today.", "Mahatma Gandhi"],
-  ["Discipline is choosing between what you want now and what you want most.", "Abraham Lincoln"],
-  ["Start where you are. Use what you have. Do what you can.", "Arthur Ashe"],
-  ["Either you run the day or the day runs you.", "Jim Rohn"],
-  ["Done is better than perfect.", "Sheryl Sandberg"],
-  ["Small steps every day add up to big results.", "Unknown"],
-  ["Focus on being productive instead of busy.", "Tim Ferriss"],
-  ["A year from now you may wish you had started today.", "Karen Lamb"],
-  ["Your future is created by what you do today, not tomorrow.", "Robert Kiyosaki"],
-  ["Motivation gets you going, habit keeps you going.", "Jim Ryun"],
-  ["Make each day your masterpiece.", "John Wooden"],
-  ["The best way to predict the future is to create it.", "Peter Drucker"],
-  ["Energy and persistence conquer all things.", "Benjamin Franklin"],
-  ["Do something today that your future self will thank you for.", "Unknown"],
-  ["Success is the sum of small efforts repeated day in and day out.", "Robert Collier"],
-  ["What you do every day matters more than what you do once in a while.", "Gretchen Rubin"],
-  ["Progress, not perfection.", "Unknown"],
+  ["By small and simple things are great things brought to pass.", "Alma 37:6"],
+  ["Adam fell that men might be; and men are, that they might have joy.", "2 Nephi 2:25"],
+  ["When ye are in the service of your fellow beings ye are only in the service of your God.", "Mosiah 2:17"],
+  ["I will go and do the things which the Lord hath commanded.", "1 Nephi 3:7"],
+  ["My grace is sufficient for all men that humble themselves before me.", "Ether 12:27"],
+  ["Wickedness never was happiness.", "Alma 41:10"],
+  ["We talk of Christ, we rejoice in Christ, we preach of Christ.", "2 Nephi 25:26"],
+  ["Charity is the pure love of Christ.", "Moroni 7:47"],
+  ["This life is the time for men to prepare to meet God.", "Alma 34:32"],
+  ["Press forward with a steadfastness in Christ, having a perfect brightness of hope.", "2 Nephi 31:20"],
+  ["If ye have faith ye hope for things which are not seen, which are true.", "Alma 32:21"],
+  ["Be steadfast and immovable, always abounding in good works.", "Mosiah 5:15"],
+  ["Come unto Christ, and be perfected in him.", "Moroni 10:32"],
+  ["Put off the natural man and become a saint through the atonement of Christ.", "Mosiah 3:19"],
+  ["Counsel with the Lord in all thy doings, and he will direct thee for good.", "Alma 37:37"],
+  ["Learn in thy youth to keep the commandments of God.", "Alma 37:35"],
+  ["Feast upon the words of Christ; for the words of Christ will tell you all things what ye should do.", "2 Nephi 32:3"],
+  ["Live in thanksgiving daily for the many mercies and blessings which God doth bestow.", "Alma 34:38"],
+  ["Men are free to choose liberty and eternal life.", "2 Nephi 2:27"],
+  ["Cry unto God for all thy support; let all thy doings be unto the Lord.", "Alma 37:36"],
+  ["Have ye received his image in your countenances?", "Alma 5:14"],
+  ["It is upon the rock of our Redeemer that ye must build your foundation.", "Helaman 5:12"],
+  ["Whoso shall put their trust in God shall be supported in their trials.", "Alma 36:3"],
+  ["Ye are free to act for yourselves.", "2 Nephi 10:23"],
 ];
 function setQuote() {
   const now = new Date();
@@ -741,34 +753,45 @@ function countdownClass(days) {
   if (days <= 30) return 'c-yellow';
   return 'c-green';
 }
+function renderEventRow(ev) {
+  const wrap = el('div', 'event');
+  const days = ev.d;
+  const cd = el('div', 'countdown ' + countdownClass(days));
+  let num, lbl;
+  if (days < 0) { num = '—'; lbl = 'past'; }
+  else if (days === 0) { num = '🎉'; lbl = 'today'; }
+  else if (days === 1) { num = '1'; lbl = 'day'; }
+  else { num = String(days); lbl = 'days'; }
+  cd.innerHTML = `<div class="num">${num}</div><div class="lbl">${lbl}</div>`;
+  const main = el('div', 'ev-main');
+  const srcMark = (ev.source === 'google' || ev.source === 'ics') ? '<span class="ev-src" title="From your Google Calendar">📅</span>' : '';
+  main.append(el('div', 'ev-title', esc(ev.title) + srcMark), el('div', 'ev-date', prettyDate(ev.event_date)));
+  const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
+  star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
+  wrap.append(cd, main, star);
+  if (ev.source !== 'ics') {
+    const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
+    wrap.append(del);
+  }
+  return wrap;
+}
 function renderEvents() {
   const box = $('eventList'); box.innerHTML = '';
-  const items = state.events.map(ev => ({ ...ev, d: daysUntil(ev.event_date) }));
-  // hide events more than 1 day in the past
-  const visible = items.filter(ev => ev.d >= -1);
-  visible.sort((a,b) => (b.starred - a.starred) || (a.d - b.d));
-  if (!visible.length) { box.appendChild(el('div', 'empty', 'No upcoming events. Add something to look forward to! 🎉')); return; }
-  for (const ev of visible) {
-    const wrap = el('div', 'event');
-    const days = ev.d;
-    const cd = el('div', 'countdown ' + countdownClass(days));
-    let num, lbl;
-    if (days < 0) { num = '—'; lbl = 'past'; }
-    else if (days === 0) { num = '🎉'; lbl = 'today'; }
-    else if (days === 1) { num = '1'; lbl = 'day'; }
-    else { num = String(days); lbl = 'days'; }
-    cd.innerHTML = `<div class="num">${num}</div><div class="lbl">${lbl}</div>`;
-    const main = el('div', 'ev-main');
-    const srcMark = (ev.source === 'google' || ev.source === 'ics') ? '<span class="ev-src" title="From your Google Calendar">📅</span>' : '';
-    main.append(el('div', 'ev-title', esc(ev.title) + srcMark), el('div', 'ev-date', prettyDate(ev.event_date)));
-    const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
-    star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
-    wrap.append(cd, main, star);
-    if (ev.source !== 'ics') {
-      const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
-      wrap.append(del);
-    }
-    box.appendChild(wrap);
+  const items = state.events.map(ev => ({ ...ev, d: daysUntil(ev.event_date) })).filter(ev => ev.d >= -1);
+  if (!items.length) { box.appendChild(el('div', 'empty', 'No upcoming events. Add something to look forward to! 🎉')); return; }
+  // Group into day/time sections, matching the 1-week / 2-week / 1-month horizons
+  const SECTIONS = [
+    { label: 'Today',        test: d => d <= 0 },
+    { label: 'This Week',    test: d => d >= 1  && d <= 7 },
+    { label: 'Next 2 Weeks', test: d => d >= 8  && d <= 14 },
+    { label: 'This Month',   test: d => d >= 15 && d <= 30 },
+    { label: 'Later',        test: d => d >= 31 },
+  ];
+  for (const sec of SECTIONS) {
+    const group = items.filter(ev => sec.test(ev.d)).sort((a, b) => (b.starred - a.starred) || (a.d - b.d));
+    if (!group.length) continue;
+    box.appendChild(el('div', 'ev-section', `${sec.label} <span class="ev-section-count">${group.length}</span>`));
+    for (const ev of group) box.appendChild(renderEventRow(ev));
   }
 }
 
