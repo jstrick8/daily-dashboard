@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#7c5cff" />
+<title>My Daily Dashboard</title>
+<style>
+  /* ---------- Theme tokens ---------- */
+  :root {
+    --bg: #f4f5fb;
+    --bg-grad-1: #eef0ff;
+    --bg-grad-2: #fef0f7;
+    --card: #ffffff;
+    --card-2: #fbfbfe;
+    --text: #1f2333;
+    --muted: #767b91;
+    --line: #ececf4;
+    --shadow: 0 6px 24px rgba(60, 50, 120, 0.08);
+    --accent: #7c5cff;
+    --accent-2: #ff7ac3;
+    --green: #21c197;
+    --yellow: #ffc23d;
+    --orange: #ff8a3d;
+    --red: #ff5470;
+    --blue: #38b6ff;
+    --radius: 18px;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f1018;
+    --bg-grad-1: #161427;
+    --bg-grad-2: #1a1320;
+    --card: #1a1b27;
+    --card-2: #20212f;
+    --text: #eceeffa8;
+    --text: #e9ebf5;
+    --muted: #8d92ab;
+    --line: #2a2c3d;
+    --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    --accent: #9b85ff;
+    --accent-2: #ff8fcf;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, var(--bg-grad-1), transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, var(--bg-grad-2), transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .3s ease, color .3s ease;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 80px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .greet h1 { margin: 0; font-size: 1.7rem; letter-spacing: -0.02em; }
+  .greet p { margin: 4px 0 0; color: var(--muted); font-size: .95rem; }
+  .topbar .spacer { flex: 1 1 auto; }
+
+  .clock {
+    text-align: right; line-height: 1.1;
+  }
+  .clock .time { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .clock .date { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+
+  .weather {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--line);
+    padding: 8px 14px; border-radius: 999px; box-shadow: var(--shadow);
+    font-size: .9rem; white-space: nowrap;
+  }
+  .weather .wx-emoji { font-size: 1.25rem; }
+
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--card);
+    color: var(--text); cursor: pointer; font-size: 1.1rem;
+    box-shadow: var(--shadow); transition: transform .15s ease, background .2s;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { transform: translateY(-2px); }
+
+  /* ---------- Quote banner ---------- */
+  .quote {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #fff; border-radius: var(--radius); padding: 18px 22px;
+    margin-bottom: 22px; box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .quote .q-text { font-size: 1.15rem; font-weight: 600; line-height: 1.4; }
+  .quote .q-author { margin-top: 6px; opacity: .9; font-size: .9rem; }
+  .quote .q-mark { position: absolute; right: 14px; top: -10px; font-size: 5rem; opacity: .18; font-family: Georgia, serif; }
+
+  /* ---------- Grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 18px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    transition: background-color .3s ease, border-color .3s ease;
+  }
+  .col-4 { grid-column: span 4; }
+  .col-5 { grid-column: span 5; }
+  .col-6 { grid-column: span 6; }
+  .col-7 { grid-column: span 7; }
+  .col-8 { grid-column: span 8; }
+  .col-12 { grid-column: span 12; }
+  @media (max-width: 900px) {
+    .col-4, .col-5, .col-6, .col-7, .col-8 { grid-column: span 12; }
+  }
+
+  .card h2 {
+    margin: 0 0 14px; font-size: 1.05rem; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .badge {
+    margin-left: auto; font-size: .72rem; font-weight: 700;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent); padding: 3px 9px; border-radius: 999px;
+  }
+  .section-emoji { font-size: 1.15rem; }
+
+  /* ---------- Inputs ---------- */
+  input[type="text"], input[type="email"], input[type="date"], textarea {
+    width: 100%; font: inherit; color: var(--text);
+    background: var(--card-2); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 12px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: none; border-radius: 12px; padding: 10px 16px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #fff; transition: transform .12s, filter .2s;
+  }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .btn.ghost {
+    background: var(--card-2); color: var(--text); border: 1px solid var(--line);
+  }
+  .row { display: flex; gap: 8px; }
+  .row.mt { margin-top: 12px; }
+
+  /* ---------- To-do / list items ---------- */
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 6px; border-bottom: 1px solid var(--line);
+  }
+  ul.list li:last-child { border-bottom: none; }
+  .check {
+    width: 22px; height: 22px; border-radius: 7px; flex: none;
+    border: 2px solid var(--line); cursor: pointer; background: var(--card-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all .15s; font-size: .8rem; color: #fff;
+  }
+  .check.done {
+    background: linear-gradient(120deg, var(--green), #5ed6b6);
+    border-color: transparent;
+  }
+  .item-text { flex: 1 1 auto; word-break: break-word; }
+  .item-text.done { text-decoration: line-through; color: var(--muted); }
+  .del {
+    border: none; background: none; color: var(--muted); cursor: pointer;
+    font-size: 1.05rem; opacity: .55; padding: 2px 6px; border-radius: 8px;
+  }
+  .del:hover { opacity: 1; color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent); }
+  .empty { color: var(--muted); font-size: .9rem; padding: 10px 4px; }
+
+  /* ---------- Priorities ---------- */
+  .prio-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .prio-row:last-child { margin-bottom: 0; }
+  .prio-num {
+    width: 30px; height: 30px; border-radius: 9px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff;
+  }
+  .prio-row:nth-child(1) .prio-num { background: linear-gradient(120deg, #ff8a3d, #ffc23d); }
+  .prio-row:nth-child(2) .prio-num { background: linear-gradient(120deg, #7c5cff, #38b6ff); }
+  .prio-row:nth-child(3) .prio-num { background: linear-gradient(120deg, #ff5470, #ff7ac3); }
+  .prio-row input.pdone { display: none; }
+  .prio-text.done { text-decoration: line-through; color: var(--muted); }
+
+  /* ---------- Events ---------- */
+  .event {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 8px; border-bottom: 1px solid var(--line);
+  }
+  .event:last-child { border-bottom: none; }
+  .countdown {
+    flex: none; min-width: 58px; text-align: center;
+    border-radius: 12px; padding: 7px 8px; color: #fff; line-height: 1;
+  }
+  .countdown .num { font-size: 1.15rem; font-weight: 800; }
+  .countdown .lbl { font-size: .62rem; text-transform: uppercase; letter-spacing: .04em; opacity: .92; }
+  .c-green { background: linear-gradient(120deg, #21c197, #4bd6ab); }
+  .c-yellow { background: linear-gradient(120deg, #f4b228, #ffd25e); }
+  .c-orange { background: linear-gradient(120deg, #ff8a3d, #ffab5e); }
+  .c-red { background: linear-gradient(120deg, #ff5470, #ff7a93); }
+  .c-gray { background: linear-gradient(120deg, #9aa0b8, #b7bcce); }
+  .ev-main { flex: 1 1 auto; }
+  .ev-title { font-weight: 600; }
+  .ev-date { color: var(--muted); font-size: .82rem; margin-top: 2px; }
+  .star {
+    border: none; background: none; cursor: pointer; font-size: 1.15rem;
+    color: var(--line); padding: 2px; line-height: 1;
+  }
+  .star.on { color: var(--yellow); }
+
+  /* ---------- Google Calendar connect ---------- */
+  .gcal-btn {
+    font: inherit; font-weight: 600; cursor: pointer; font-size: .85rem;
+    border: 1px solid var(--line); background: var(--card-2); color: var(--text);
+    border-radius: 999px; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px;
+    transition: border-color .15s, transform .12s;
+  }
+  .gcal-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .gcal-pill {
+    font-size: .8rem; color: var(--green); white-space: nowrap;
+    background: color-mix(in srgb, var(--green) 14%, transparent);
+    padding: 6px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .gcal-pill .disc { color: var(--muted); cursor: pointer; margin-left: 4px; opacity: .7; }
+  .gcal-pill .disc:hover { opacity: 1; color: var(--red); }
+  .gcal-err { font-size: .78rem; color: var(--red); }
+  .ev-src { font-size: .78rem; margin-left: 6px; opacity: .55; }
+
+  /* ---------- Habits ---------- */
+  .habit {
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px 6px; border-bottom: 1px solid var(--line);
+  }
+  .habit:last-child { border-bottom: none; }
+  .habit-emoji { font-size: 1.3rem; flex: none; width: 30px; text-align: center; }
+  .habit-name { flex: 1 1 auto; font-weight: 500; }
+  .streak {
+    font-size: .78rem; font-weight: 700; color: var(--orange);
+    background: color-mix(in srgb, var(--orange) 14%, transparent);
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .habit-toggle {
+    width: 30px; height: 30px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid var(--line); background: var(--card-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; transition: all .15s;
+  }
+  .habit-toggle.done { background: linear-gradient(120deg, var(--green), #5ed6b6); border-color: transparent; }
+
+  /* ---------- Mood ---------- */
+  .mood-row { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+  .mood-btn {
+    flex: 1; border: 1px solid var(--line); background: var(--card-2);
+    border-radius: 12px; padding: 10px 0; cursor: pointer; font-size: 1.5rem;
+    transition: transform .12s, background .2s, border-color .2s;
+  }
+  .mood-btn:hover { transform: translateY(-2px); }
+  .mood-btn.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .mood-label { font-size: .8rem; color: var(--muted); margin: 10px 0 6px; }
+
+  /* ---------- Stats ---------- */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat {
+    background: var(--card-2); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px;
+  }
+  .stat .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
+  .stat .lbl { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+  .progress { height: 9px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 9px; }
+  .progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s ease; }
+  .week-dots { display: flex; gap: 6px; margin-top: 10px; }
+  .week-dots .d { flex: 1; text-align: center; font-size: .7rem; color: var(--muted); }
+  .week-dots .dot { height: 26px; border-radius: 8px; margin-bottom: 4px; background: var(--line); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+
+  textarea.notes { min-height: 150px; resize: vertical; line-height: 1.5; }
+  .saved-tag { font-size: .72rem; color: var(--green); opacity: 0; transition: opacity .3s; }
+  .saved-tag.show { opacity: 1; }
+
+  /* ---------- Auth screen ---------- */
+  .auth-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .auth-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+    box-shadow: var(--shadow); padding: 34px 30px; max-width: 420px; width: 100%; text-align: center;
+  }
+  .auth-card .logo { font-size: 2.6rem; }
+  .auth-card h1 { margin: 10px 0 4px; font-size: 1.5rem; }
+  .auth-card p { color: var(--muted); margin: 0 0 22px; font-size: .95rem; }
+  .auth-card .btn { width: 100%; margin-top: 12px; padding: 12px; }
+  .auth-msg { margin-top: 16px; font-size: .9rem; min-height: 20px; }
+  .auth-msg.ok { color: var(--green); }
+  .auth-msg.err { color: var(--red); }
+  .hidden { display: none !important; }
+
+  .footer-note { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 30px; }
+  .footer-note a { color: var(--accent); cursor: pointer; }
+
+  .skeleton { color: var(--muted); font-size: .9rem; padding: 30px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="authScreen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div style="position:absolute; top:18px; right:18px;">
+      <button class="icon-btn" id="authThemeBtn" title="Toggle light/dark">🌙</button>
+    </div>
+    <div class="logo">🗓️</div>
+    <h1>My Daily Dashboard</h1>
+    <p>Enter your email and we'll send you a secure magic link to sign in. No password needed.</p>
+    <form id="loginForm">
+      <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" required />
+      <button class="btn" type="submit" id="loginBtn">Send me a magic link ✨</button>
+    </form>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div id="dashboard" class="wrap hidden">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="greet">
+      <h1 id="greeting">Hello 👋</h1>
+      <p id="subGreeting">Let's make today count.</p>
+    </div>
+    <div class="spacer"></div>
+    <div class="weather" id="weatherBox" title="Local weather">
+      <span class="wx-emoji">⛅</span><span id="weatherText">Loading weather…</span>
+    </div>
+    <div class="clock">
+      <div class="time" id="clockTime">--:--</div>
+      <div class="date" id="clockDate">—</div>
+    </div>
+    <button class="icon-btn" id="themeBtn" title="Toggle light/dark">🌙</button>
+    <button class="icon-btn" id="logoutBtn" title="Sign out">⎋</button>
+  </div>
+
+  <!-- Quote -->
+  <div class="quote">
+    <span class="q-mark">&ldquo;</span>
+    <div class="q-text" id="quoteText">—</div>
+    <div class="q-author" id="quoteAuthor"></div>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid">
+
+    <!-- Top 3 priorities -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">🎯</span> Top 3 Priorities Today</h2>
+      <div id="prioList"><div class="skeleton">Loading…</div></div>
+    </div>
+
+    <!-- Mood -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">💭</span> Daily Check-in</h2>
+      <div class="mood-label">How are you feeling?</div>
+      <div class="mood-row" id="moodRow"></div>
+      <div class="mood-label">Energy level?</div>
+      <div class="mood-row" id="energyRow"></div>
+    </div>
+
+    <!-- To-dos -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">✅</span> To-Do List <span class="badge" id="todoBadge">0/0</span></h2>
+      <form class="row" id="todoForm">
+        <input type="text" id="todoInput" placeholder="Add a task and hit Enter…" />
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <ul class="list" id="todoList" style="margin-top:12px;"></ul>
+    </div>
+
+    <!-- Upcoming events -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">📅</span> Upcoming Events</h2>
+      <form class="row" id="eventForm" style="flex-wrap:wrap;">
+        <input type="text" id="eventTitle" placeholder="Event name…" style="flex:2 1 140px;" />
+        <input type="date" id="eventDate" style="flex:1 1 130px;" />
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <div id="gcalStatus" style="margin-top:10px;"></div>
+      <div id="eventList" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Habits -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">🔥</span> Habits &amp; Streaks</h2>
+      <form class="row" id="habitForm">
+        <input type="text" id="habitEmoji" placeholder="🏃" style="flex:0 0 64px; text-align:center;" maxlength="2" />
+        <input type="text" id="habitName" placeholder="New habit…" />
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <div id="habitList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card col-6">
+      <h2><span class="section-emoji">📊</span> Today's Progress</h2>
+      <div id="statsBox"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card col-12">
+      <h2><span class="section-emoji">📝</span> Scratchpad <span class="saved-tag" id="notesSaved">saved ✓</span></h2>
+      <textarea class="notes" id="notesArea" placeholder="Brain-dump, ideas, links, anything…"></textarea>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    Synced to the cloud · <a id="refreshBtn">refresh</a>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+/* ============================================================
+   CONFIG  — your Supabase project
+   ============================================================ */
+const SUPABASE_URL = 'https://qjgsngguhlyqkzjyrsau.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_mInpkG7m8I-qjWl0hpOlJA_R4VPJE3C';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ============================================================
+   Small helpers
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const esc = (s) => (s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+function todayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateAddStr(days) { const d = new Date(); d.setDate(d.getDate()+days); return todayStr(d); }
+function daysUntil(dateStr) {
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const ev = new Date(y, m-1, d); ev.setHours(0,0,0,0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((ev - now) / 86400000);
+}
+function prettyDate(dateStr) {
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+}
+
+/* ============================================================
+   Theme (auto light/dark + toggle)
+   ============================================================ */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const icon = t === 'dark' ? '☀️' : '🌙';
+  if ($('themeBtn')) $('themeBtn').textContent = icon;
+  if ($('authThemeBtn')) $('authThemeBtn').textContent = icon;
+}
+function initTheme() {
+  const saved = localStorage.getItem('dd-theme');
+  const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (sysDark ? 'dark' : 'light'));
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('dd-theme', next);
+  applyTheme(next);
+}
+initTheme();
+$('themeBtn').addEventListener('click', toggleTheme);
+$('authThemeBtn').addEventListener('click', toggleTheme);
+
+/* ============================================================
+   Clock + greeting
+   ============================================================ */
+function tickClock() {
+  const now = new Date();
+  $('clockTime').textContent = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  $('clockDate').textContent = now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  const h = now.getHours();
+  const part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night';
+  const emoji = h < 12 ? '🌅' : h < 17 ? '☀️' : h < 21 ? '🌆' : '🌙';
+  if (window._userName !== undefined) {
+    $('greeting').textContent = `${part}${window._userName ? ', ' + window._userName : ''} ${emoji}`;
+  }
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ============================================================
+   Quote of the day (stable per day, local list)
+   ============================================================ */
+const QUOTES = [
+  ["The secret of getting ahead is getting started.", "Mark Twain"],
+  ["It always seems impossible until it's done.", "Nelson Mandela"],
+  ["Don't watch the clock; do what it does. Keep going.", "Sam Levenson"],
+  ["Well done is better than well said.", "Benjamin Franklin"],
+  ["You don't have to be great to start, but you have to start to be great.", "Zig Ziglar"],
+  ["Little things make big days.", "Unknown"],
+  ["Action is the foundational key to all success.", "Pablo Picasso"],
+  ["The future depends on what you do today.", "Mahatma Gandhi"],
+  ["Discipline is choosing between what you want now and what you want most.", "Abraham Lincoln"],
+  ["Start where you are. Use what you have. Do what you can.", "Arthur Ashe"],
+  ["Either you run the day or the day runs you.", "Jim Rohn"],
+  ["Done is better than perfect.", "Sheryl Sandberg"],
+  ["Small steps every day add up to big results.", "Unknown"],
+  ["Focus on being productive instead of busy.", "Tim Ferriss"],
+  ["A year from now you may wish you had started today.", "Karen Lamb"],
+  ["Your future is created by what you do today, not tomorrow.", "Robert Kiyosaki"],
+  ["Motivation gets you going, habit keeps you going.", "Jim Ryun"],
+  ["Make each day your masterpiece.", "John Wooden"],
+  ["The best way to predict the future is to create it.", "Peter Drucker"],
+  ["Energy and persistence conquer all things.", "Benjamin Franklin"],
+  ["Do something today that your future self will thank you for.", "Unknown"],
+  ["Success is the sum of small efforts repeated day in and day out.", "Robert Collier"],
+  ["What you do every day matters more than what you do once in a while.", "Gretchen Rubin"],
+  ["Progress, not perfection.", "Unknown"],
+];
+function setQuote() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const day = Math.floor((now - start) / 86400000);
+  const [q, a] = QUOTES[day % QUOTES.length];
+  $('quoteText').textContent = q;
+  $('quoteAuthor').textContent = '— ' + a;
+}
+setQuote();
+
+/* ============================================================
+   Weather (Open-Meteo, no API key) + geolocation
+   ============================================================ */
+const WX = {
+  0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],3:['☁️','Overcast'],
+  45:['🌫️','Foggy'],48:['🌫️','Foggy'],51:['🌦️','Light drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Drizzle'],
+  61:['🌦️','Light rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],71:['🌨️','Light snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],
+  80:['🌦️','Showers'],81:['🌧️','Showers'],82:['⛈️','Heavy showers'],95:['⛈️','Thunderstorm'],96:['⛈️','Thunderstorm'],99:['⛈️','Thunderstorm']
+};
+async function loadWeather() {
+  const show = (emoji, txt) => { $('weatherBox').querySelector('.wx-emoji').textContent = emoji; $('weatherText').textContent = txt; };
+  function go(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`;
+    fetch(url).then(r => r.json()).then(d => {
+      const c = d.current; const [emoji, label] = WX[c.weather_code] || ['🌡️',''];
+      show(emoji, `${Math.round(c.temperature_2m)}°F · ${label}`);
+    }).catch(() => show('🌡️', 'Weather unavailable'));
+  }
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      p => go(p.coords.latitude.toFixed(2), p.coords.longitude.toFixed(2)),
+      () => show('📍', 'Enable location for weather'),
+      { timeout: 8000 }
+    );
+  } else { show('🌡️', 'Weather unavailable'); }
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+const authScreen = $('authScreen'), dashboard = $('dashboard');
+
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) enterApp(session); else showAuth();
+
+  sb.auth.onAuthStateChange((_e, sess) => {
+    if (sess) enterApp(sess); else showAuth();
+  });
+}
+function showAuth() {
+  dashboard.classList.add('hidden');
+  authScreen.classList.remove('hidden');
+}
+let _loaded = false;
+function enterApp(session) {
+  authScreen.classList.add('hidden');
+  dashboard.classList.remove('hidden');
+  const email = session.user.email || '';
+  window._userName = email ? email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g, c => c.toUpperCase()).split(' ')[0] : '';
+  tickClock();
+  if (!_loaded) { _loaded = true; loadWeather(); loadAll(); }
+}
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('emailInput').value.trim();
+  if (!email) return;
+  const msg = $('authMsg'); msg.className = 'auth-msg'; msg.textContent = 'Sending…';
+  $('loginBtn').disabled = true;
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  });
+  $('loginBtn').disabled = false;
+  if (error) { msg.className = 'auth-msg err'; msg.textContent = error.message; }
+  else { msg.className = 'auth-msg ok'; msg.textContent = '✅ Check your email for the magic link! (Check spam too.) Open it on this device.'; }
+});
+
+$('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+$('refreshBtn').addEventListener('click', () => loadAll());
+
+/* ============================================================
+   DATA LAYER + RENDERING
+   ============================================================ */
+let state = { todos: [], priorities: [], events: [], habits: [], habitLogs: [], mood: null, notes: '' };
+
+async function loadAll() {
+  const today = todayStr();
+  const weekAgo = dateAddStr(-7);
+  const [todos, prios, events, habits, logs, mood, notes] = await Promise.all([
+    sb.from('todos').select('*').order('position', { ascending: true }),
+    sb.from('priorities').select('*').order('slot', { ascending: true }),
+    sb.from('events').select('*').eq('deleted', false).order('event_date', { ascending: true }),
+    sb.from('habits').select('*').order('position', { ascending: true }),
+    sb.from('habit_logs').select('*').gte('log_date', weekAgo),
+    sb.from('moods').select('*').eq('log_date', today).maybeSingle(),
+    sb.from('notes').select('*').maybeSingle(),
+  ]);
+  state.todos = todos.data || [];
+  state.priorities = prios.data || [];
+  state.events = events.data || [];
+  state.habits = habits.data || [];
+  state.habitLogs = logs.data || [];
+  state.mood = mood.data || null;
+  state.notes = notes.data?.content || '';
+  renderAll();
+  loadGcalStatus();
+  setupRealtime();
+}
+async function reloadEvents() {
+  const { data } = await sb.from('events').select('*').eq('deleted', false).order('event_date', { ascending: true });
+  state.events = data || [];
+  renderEvents();
+}
+function renderAll() {
+  renderPriorities(); renderTodos(); renderEvents(); renderHabits(); renderMood(); renderStats();
+  if (document.activeElement !== $('notesArea')) $('notesArea').value = state.notes;
+}
+
+/* ---------- TO-DOS ---------- */
+$('todoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = $('todoInput').value.trim(); if (!title) return;
+  $('todoInput').value = '';
+  const { data } = await sb.from('todos').insert({ title, position: Date.now() }).select().single();
+  if (data) { state.todos.push(data); renderTodos(); renderStats(); }
+});
+async function toggleTodo(t) {
+  t.done = !t.done; renderTodos(); renderStats();
+  await sb.from('todos').update({ done: t.done }).eq('id', t.id);
+}
+async function delTodo(t) {
+  state.todos = state.todos.filter(x => x.id !== t.id); renderTodos(); renderStats();
+  await sb.from('todos').delete().eq('id', t.id);
+}
+function renderTodos() {
+  const list = $('todoList'); list.innerHTML = '';
+  const sorted = [...state.todos].sort((a,b) => (a.done - b.done) || (a.position - b.position));
+  if (!sorted.length) list.appendChild(el('li', 'empty', 'No tasks yet — add your first one above! 🌱'));
+  for (const t of sorted) {
+    const li = el('li');
+    const chk = el('div', 'check' + (t.done ? ' done' : ''), t.done ? '✓' : '');
+    chk.onclick = () => toggleTodo(t);
+    const txt = el('span', 'item-text' + (t.done ? ' done' : ''), esc(t.title));
+    const del = el('button', 'del', '✕'); del.onclick = () => delTodo(t);
+    li.append(chk, txt, del); list.appendChild(li);
+  }
+  const done = state.todos.filter(t => t.done).length;
+  $('todoBadge').textContent = `${done}/${state.todos.length}`;
+}
+
+/* ---------- PRIORITIES ---------- */
+function getPrio(slot) { return state.priorities.find(p => p.slot === slot); }
+async function savePrio(slot, fields) {
+  let p = getPrio(slot);
+  if (p) { Object.assign(p, fields); await sb.from('priorities').update(fields).eq('id', p.id); }
+  else {
+    const row = { slot, title: '', done: false, ...fields };
+    const { data } = await sb.from('priorities').upsert(row, { onConflict: 'user_id,slot' }).select().single();
+    if (data) state.priorities.push(data);
+  }
+}
+function renderPriorities() {
+  const box = $('prioList'); box.innerHTML = '';
+  for (let slot = 1; slot <= 3; slot++) {
+    const p = getPrio(slot);
+    const row = el('div', 'prio-row');
+    const num = el('div', 'prio-num', String(slot));
+    num.style.cursor = 'pointer';
+    num.title = 'Mark done';
+    num.onclick = () => savePrio(slot, { done: !(p && p.done) }).then(renderPriorities);
+    if (p && p.done) num.innerHTML = '✓';
+    const input = el('input'); input.type = 'text'; input.value = p?.title || '';
+    input.placeholder = `Priority #${slot}…`;
+    input.className = 'prio-text' + (p && p.done ? ' done' : '');
+    input.onchange = () => savePrio(slot, { title: input.value.trim() });
+    row.append(num, input); box.appendChild(row);
+  }
+}
+
+/* ---------- EVENTS ---------- */
+$('eventForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = $('eventTitle').value.trim(); const date = $('eventDate').value;
+  if (!title || !date) return;
+  $('eventTitle').value = ''; $('eventDate').value = '';
+  const { data } = await sb.from('events').insert({ title, event_date: date }).select().single();
+  if (data) { state.events.push(data); renderEvents(); if (gcal.connected) triggerSync(); }
+});
+async function toggleStar(ev) {
+  ev.starred = !ev.starred; renderEvents();
+  await sb.from('events').update({ starred: ev.starred }).eq('id', ev.id);
+}
+async function delEvent(ev) {
+  state.events = state.events.filter(x => x.id !== ev.id); renderEvents();
+  if (gcal.connected && ev.gcal_event_id) {
+    // soft-delete so the background sync can remove it from Google Calendar too
+    await sb.from('events').update({ deleted: true }).eq('id', ev.id);
+    triggerSync();
+  } else {
+    await sb.from('events').delete().eq('id', ev.id);
+  }
+}
+function countdownClass(days) {
+  if (days < 0) return 'c-gray';
+  if (days <= 7) return 'c-red';
+  if (days <= 14) return 'c-orange';
+  if (days <= 30) return 'c-yellow';
+  return 'c-green';
+}
+function renderEvents() {
+  const box = $('eventList'); box.innerHTML = '';
+  const items = state.events.map(ev => ({ ...ev, d: daysUntil(ev.event_date) }));
+  // hide events more than 1 day in the past
+  const visible = items.filter(ev => ev.d >= -1);
+  visible.sort((a,b) => (b.starred - a.starred) || (a.d - b.d));
+  if (!visible.length) { box.appendChild(el('div', 'empty', 'No upcoming events. Add something to look forward to! 🎉')); return; }
+  for (const ev of visible) {
+    const wrap = el('div', 'event');
+    const days = ev.d;
+    const cd = el('div', 'countdown ' + countdownClass(days));
+    let num, lbl;
+    if (days < 0) { num = '—'; lbl = 'past'; }
+    else if (days === 0) { num = '🎉'; lbl = 'today'; }
+    else if (days === 1) { num = '1'; lbl = 'day'; }
+    else { num = String(days); lbl = 'days'; }
+    cd.innerHTML = `<div class="num">${num}</div><div class="lbl">${lbl}</div>`;
+    const main = el('div', 'ev-main');
+    const srcMark = ev.source === 'google' ? '<span class="ev-src" title="From Google Calendar">📅</span>' : '';
+    main.append(el('div', 'ev-title', esc(ev.title) + srcMark), el('div', 'ev-date', prettyDate(ev.event_date)));
+    const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
+    star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
+    const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
+    wrap.append(cd, main, star, del); box.appendChild(wrap);
+  }
+}
+
+/* ---------- GOOGLE CALENDAR SYNC ---------- */
+const FUNCTIONS_BASE = SUPABASE_URL + '/functions/v1';
+let gcal = { connected: false, email: null, error: null };
+let _realtimeReady = false;
+
+async function authHeader() {
+  const { data: { session } } = await sb.auth.getSession();
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+async function loadGcalStatus() {
+  try {
+    const { data } = await sb.rpc('my_google_connection');
+    const row = Array.isArray(data) ? data[0] : data;
+    gcal.connected = !!(row && row.connected);
+    gcal.email = (row && row.google_email) || null;
+    gcal.error = (row && row.last_error) || null;
+  } catch { gcal.connected = false; }
+  renderGcalStatus();
+}
+function renderGcalStatus() {
+  const box = $('gcalStatus'); if (!box) return;
+  if (gcal.connected) {
+    box.innerHTML = `<span class="gcal-pill">📅 Synced with Google Calendar${gcal.email ? ` · ${esc(gcal.email)}` : ''}<span class="disc" id="gcalDisc" title="Disconnect">✕</span></span>`
+      + (gcal.error ? `<div class="gcal-err">⚠️ Last sync issue — try reconnecting.</div>` : '');
+    const d = $('gcalDisc'); if (d) d.onclick = disconnectGoogle;
+  } else {
+    box.innerHTML = `<button class="gcal-btn" id="gcalConnectBtn">📅 Connect Google Calendar</button>`;
+    const b = $('gcalConnectBtn'); if (b) b.onclick = connectGoogle;
+  }
+}
+async function connectGoogle() {
+  const btn = $('gcalConnectBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Opening Google…'; }
+  try {
+    const res = await fetch(`${FUNCTIONS_BASE}/google-auth-start`, {
+      method: 'POST',
+      headers: { ...(await authHeader()), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ return_url: location.origin + location.pathname })
+    });
+    const j = await res.json();
+    if (j.url) location.href = j.url;
+    else { alert(j.error || 'Could not start Google connection.'); renderGcalStatus(); }
+  } catch { alert('Could not reach the sync service.'); renderGcalStatus(); }
+}
+async function disconnectGoogle() {
+  if (!confirm('Disconnect Google Calendar? Your existing events stay, but new changes will no longer sync.')) return;
+  try { await sb.rpc('disconnect_my_google'); } catch {}
+  gcal.connected = false; gcal.email = null; gcal.error = null; renderGcalStatus();
+}
+let _syncing = false;
+async function triggerSync() {
+  if (_syncing) return; _syncing = true;
+  try {
+    await fetch(`${FUNCTIONS_BASE}/calendar-sync`, {
+      method: 'POST', headers: { ...(await authHeader()), 'Content-Type': 'application/json' }, body: '{}'
+    });
+  } catch {}
+  _syncing = false;
+  reloadEvents();
+}
+function setupRealtime() {
+  if (_realtimeReady || !_uid) return; _realtimeReady = true;
+  sb.channel('events-' + _uid)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `user_id=eq.${_uid}` },
+        () => reloadEvents())
+    .subscribe();
+}
+// Coming back from a successful Google connection
+(function handleGcalReturn() {
+  if (new URLSearchParams(location.search).get('gcal') === 'connected') {
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => { loadGcalStatus(); triggerSync(); }, 600);
+  }
+})();
+
+/* ---------- HABITS ---------- */
+$('habitForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('habitName').value.trim(); if (!name) return;
+  const emoji = $('habitEmoji').value.trim() || '✅';
+  $('habitName').value = ''; $('habitEmoji').value = '';
+  const { data } = await sb.from('habits').insert({ name, emoji, position: Date.now() }).select().single();
+  if (data) { state.habits.push(data); renderHabits(); }
+});
+function habitDoneToday(habitId) {
+  const today = todayStr();
+  return state.habitLogs.some(l => l.habit_id === habitId && l.log_date === today);
+}
+function streakFor(habitId) {
+  const dates = new Set(state.habitLogs.filter(l => l.habit_id === habitId).map(l => l.log_date));
+  let streak = 0;
+  // count back from today (or yesterday if today not done yet)
+  let cursor = new Date(); cursor.setHours(0,0,0,0);
+  if (!dates.has(todayStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (dates.has(todayStr(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1); }
+  return streak;
+}
+async function toggleHabit(h) {
+  const today = todayStr();
+  const done = habitDoneToday(h.id);
+  if (done) {
+    state.habitLogs = state.habitLogs.filter(l => !(l.habit_id === h.id && l.log_date === today));
+    renderHabits(); renderStats();
+    await sb.from('habit_logs').delete().eq('habit_id', h.id).eq('log_date', today);
+  } else {
+    const { data } = await sb.from('habit_logs').insert({ habit_id: h.id, log_date: today }).select().single();
+    if (data) state.habitLogs.push(data);
+    renderHabits(); renderStats();
+  }
+}
+async function delHabit(h) {
+  state.habits = state.habits.filter(x => x.id !== h.id);
+  state.habitLogs = state.habitLogs.filter(l => l.habit_id !== h.id);
+  renderHabits(); renderStats();
+  await sb.from('habits').delete().eq('id', h.id);
+}
+function renderHabits() {
+  const box = $('habitList'); box.innerHTML = '';
+  if (!state.habits.length) { box.appendChild(el('div', 'empty', 'No habits yet. Build a streak! 🔥')); return; }
+  for (const h of state.habits) {
+    const row = el('div', 'habit');
+    const done = habitDoneToday(h.id);
+    const streak = streakFor(h.id);
+    const toggle = el('div', 'habit-toggle' + (done ? ' done' : ''), done ? '✓' : '');
+    toggle.onclick = () => toggleHabit(h);
+    const streakTag = el('span', 'streak', (streak > 0 ? `🔥 ${streak}` : '—'));
+    const del = el('button', 'del', '✕'); del.onclick = () => delHabit(h);
+    row.append(el('span', 'habit-emoji', esc(h.emoji)), el('span', 'habit-name', esc(h.name)), streakTag, toggle, del);
+    box.appendChild(row);
+  }
+}
+
+/* ---------- MOOD ---------- */
+const MOODS = ['😞','😕','😐','🙂','😄'];
+const ENERGY = ['🪫','😴','😌','⚡','🔋'];
+async function setMood(field, val) {
+  const today = todayStr();
+  const cur = state.mood || { log_date: today, mood: 3, energy: 3 };
+  cur[field] = val;
+  state.mood = cur; renderMood(); renderStats();
+  await sb.from('moods').upsert(
+    { log_date: today, mood: cur.mood, energy: cur.energy },
+    { onConflict: 'user_id,log_date' }
+  );
+}
+function renderMood() {
+  const mRow = $('moodRow'), eRow = $('energyRow');
+  mRow.innerHTML = ''; eRow.innerHTML = '';
+  MOODS.forEach((emo, i) => {
+    const b = el('button', 'mood-btn' + (state.mood && state.mood.mood === i+1 ? ' sel' : ''), emo);
+    b.onclick = () => setMood('mood', i+1); mRow.appendChild(b);
+  });
+  ENERGY.forEach((emo, i) => {
+    const b = el('button', 'mood-btn' + (state.mood && state.mood.energy === i+1 ? ' sel' : ''), emo);
+    b.onclick = () => setMood('energy', i+1); eRow.appendChild(b);
+  });
+}
+
+/* ---------- STATS ---------- */
+function renderStats() {
+  const box = $('statsBox');
+  const total = state.todos.length, done = state.todos.filter(t => t.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const habitsTotal = state.habits.length;
+  const habitsDone = state.habits.filter(h => habitDoneToday(h.id)).length;
+  const prioDone = state.priorities.filter(p => p.done && p.title).length;
+  const prioTotal = state.priorities.filter(p => p.title).length;
+  box.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat"><div class="big">${done}/${total}</div><div class="lbl">tasks done</div>
+        <div class="progress"><span style="width:${pct}%"></span></div></div>
+      <div class="stat"><div class="big">${habitsDone}/${habitsTotal}</div><div class="lbl">habits today</div>
+        <div class="progress"><span style="width:${habitsTotal?Math.round(habitsDone/habitsTotal*100):0}%"></span></div></div>
+      <div class="stat"><div class="big">${prioDone}/${prioTotal||0}</div><div class="lbl">priorities done</div></div>
+      <div class="stat"><div class="big">${state.mood ? MOODS[state.mood.mood-1] : '—'}</div><div class="lbl">today's mood</div></div>
+    </div>`;
+}
+
+/* ---------- NOTES (debounced autosave) ---------- */
+let notesTimer = null;
+$('notesArea').addEventListener('input', () => {
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(async () => {
+    const content = $('notesArea').value;
+    state.notes = content;
+    await sb.from('notes').upsert({ content, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    const tag = $('notesSaved'); tag.classList.add('show'); setTimeout(() => tag.classList.remove('show'), 1200);
+  }, 700);
+});
+
+/* ============================================================
+   Auto-fill user_id on inserts via session (RLS needs it)
+   ============================================================ */
+// Supabase requires user_id to match auth.uid(); we set a default through a
+// trigger-free approach by injecting it client-side before every insert/upsert.
+const _from = sb.from.bind(sb);
+let _uid = null;
+sb.auth.getSession().then(({ data }) => { _uid = data.session?.user?.id || null; });
+sb.auth.onAuthStateChange((_e, s) => { _uid = s?.user?.id || null; });
+sb.from = (table) => {
+  const q = _from(table);
+  const wrap = (fn) => (rows, opts) => {
+    if (Array.isArray(rows)) rows = rows.map(r => ({ user_id: _uid, ...r }));
+    else if (rows && typeof rows === 'object') rows = { user_id: _uid, ...rows };
+    return fn(rows, opts);
+  };
+  q.insert = wrap(q.insert.bind(q));
+  q.upsert = wrap(q.upsert.bind(q));
+  return q;
+};
+
+/* ============================================================
+   GO
+   ============================================================ */
+initAuth();
+</script>
+</body>
+</html>
