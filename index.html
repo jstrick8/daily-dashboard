@@ -365,6 +365,16 @@
     <div class="q-author" id="quoteAuthor"></div>
   </div>
 
+  <!-- Today's tasks (prominent, full width) -->
+  <div class="card" style="margin-bottom:18px;">
+    <h2><span class="section-emoji">✅</span> Today's Tasks <span class="badge" id="todoBadge">0/0</span></h2>
+    <form class="row" id="todoForm">
+      <input type="text" id="todoInput" placeholder="Add a task and hit Enter…" />
+      <button class="btn" type="submit">Add</button>
+    </form>
+    <ul class="list" id="todoList" style="margin-top:12px;"></ul>
+  </div>
+
   <!-- Grid -->
   <div class="grid">
 
@@ -381,16 +391,6 @@
       <div class="mood-row" id="moodRow"></div>
       <div class="mood-label">Energy level?</div>
       <div class="mood-row" id="energyRow"></div>
-    </div>
-
-    <!-- To-dos -->
-    <div class="card col-6">
-      <h2><span class="section-emoji">✅</span> To-Do List <span class="badge" id="todoBadge">0/0</span></h2>
-      <form class="row" id="todoForm">
-        <input type="text" id="todoInput" placeholder="Add a task and hit Enter…" />
-        <button class="btn" type="submit">Add</button>
-      </form>
-      <ul class="list" id="todoList" style="margin-top:12px;"></ul>
     </div>
 
     <!-- Upcoming events -->
