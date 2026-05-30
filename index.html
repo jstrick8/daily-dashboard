@@ -240,6 +240,13 @@
   .event.done .ev-title { text-decoration: line-through; color: var(--muted); }
   .event.done .countdown { opacity: .45; }
   .event.done .ev-date { opacity: .7; }
+  .show-more-btn {
+    margin-top: 12px; width: 100%; text-align: center;
+    background: var(--card-2); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 12px; padding: 9px; cursor: pointer; font: inherit; font-weight: 600; font-size: .85rem;
+    transition: border-color .15s, color .15s;
+  }
+  .show-more-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* ---------- Google Calendar connect ---------- */
   .gcal-btn {
@@ -833,6 +840,8 @@ function renderEventRow(ev) {
   }
   return wrap;
 }
+let eventsExpanded = false;
+const EVENT_LIMIT = 5;
 function renderEvents() {
   const box = $('eventList'); box.innerHTML = '';
   const items = state.events.map(ev => ({ ...ev, d: daysUntil(ev.event_date) })).filter(ev => ev.d >= -1);
@@ -845,11 +854,23 @@ function renderEvents() {
     { label: 'This Month',   test: d => d >= 15 && d <= 30 },
     { label: 'Later',        test: d => d >= 31 },
   ];
-  for (const sec of SECTIONS) {
-    const group = items.filter(ev => sec.test(ev.d)).sort((a, b) => (a.done - b.done) || (b.starred - a.starred) || (a.d - b.d));
-    if (!group.length) continue;
-    box.appendChild(el('div', 'ev-section', `${sec.label} <span class="ev-section-count">${group.length}</span>`));
-    for (const ev of group) box.appendChild(renderEventRow(ev));
+  const groups = SECTIONS
+    .map(sec => ({ label: sec.label, list: items.filter(ev => sec.test(ev.d)).sort((a, b) => (a.done - b.done) || (b.starred - a.starred) || (a.d - b.d)) }))
+    .filter(g => g.list.length);
+  const total = items.length;
+  const limit = eventsExpanded ? Infinity : EVENT_LIMIT;
+  let shown = 0;
+  for (const g of groups) {
+    if (shown >= limit) break;
+    const slice = g.list.slice(0, limit - shown);
+    box.appendChild(el('div', 'ev-section', `${g.label} <span class="ev-section-count">${g.list.length}</span>`));
+    for (const ev of slice) box.appendChild(renderEventRow(ev));
+    shown += slice.length;
+  }
+  if (total > EVENT_LIMIT) {
+    const btn = el('button', 'show-more-btn', eventsExpanded ? 'Show less ▲' : `Show all ${total} events ▼`);
+    btn.onclick = () => { eventsExpanded = !eventsExpanded; renderEvents(); };
+    box.appendChild(btn);
   }
 }
 
