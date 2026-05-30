@@ -580,6 +580,24 @@ const QUOTES = [
   ["Hope maketh an anchor to the souls of men, sure and steadfast.", "Ether 12:4"],
   ["Ye receive no witness until after the trial of your faith.", "Ether 12:6"],
   ["We will liken the word unto a seed.", "Alma 32:28"],
+  ["It is by grace that we are saved, after all we can do.", "2 Nephi 25:23"],
+  ["I will give unto the children of men line upon line, precept upon precept.", "2 Nephi 28:30"],
+  ["To be learned is good if they hearken unto the counsels of God.", "2 Nephi 9:29"],
+  ["But before ye seek for riches, seek ye for the kingdom of God.", "Jacob 2:18"],
+  ["Watch yourselves, and your thoughts, and your words, and your deeds.", "Mosiah 4:30"],
+  ["Mourn with those that mourn; comfort those that stand in need of comfort.", "Mosiah 18:9"],
+  ["He that hath the spirit of contention is not of me, but is of the devil.", "3 Nephi 11:29"],
+  ["What manner of men ought ye to be? Verily I say unto you, even as I am.", "3 Nephi 27:27"],
+  ["Charity suffereth long, and is kind, and envieth not.", "Moroni 7:45"],
+  ["He shall take upon him the pains and the sicknesses of his people.", "Alma 7:11"],
+  ["I did liken all scriptures unto us, for our profit and learning.", "1 Nephi 19:23"],
+  ["Ye must pray always, and not faint.", "2 Nephi 32:9"],
+  ["I will ease the burdens which are put upon your shoulders.", "Mosiah 24:14"],
+  ["Awake and arouse your faculties, even to an experiment upon my words.", "Alma 32:27"],
+  ["Then will I make weak things become strong unto them.", "Ether 12:27"],
+  ["Behold, mine arm of mercy is extended towards you.", "3 Nephi 9:14"],
+  ["The Lord is merciful unto all who will call on his holy name.", "Helaman 3:27"],
+  ["Rely wholly upon the merits of him who is mighty to save.", "2 Nephi 31:19"],
 ];
 function setQuote() {
   const now = new Date();
@@ -808,7 +826,7 @@ function renderEventRow(ev) {
   chk.onclick = () => toggleEventDone(ev);
   const star = el('button', 'star' + (ev.starred ? ' on' : ''), ev.starred ? '★' : '☆');
   star.title = 'Mark high priority'; star.onclick = () => toggleStar(ev);
-  wrap.append(cd, main, chk, star);
+  wrap.append(chk, cd, main, star);
   if (ev.source !== 'ics') {
     const del = el('button', 'del', '✕'); del.onclick = () => delEvent(ev);
     wrap.append(del);
